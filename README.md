@@ -61,7 +61,131 @@
 </details>
 
 ## 🔥 News
-- [2026/02/11] Our paper is now live.
+- [2026/04/13] Our inference code and weights are released!
+
+## 🔧 Installation
+
+1. Clone Repo
+    ```bash
+    git clone https://github.com/Luo-Yihang/4RC
+    cd 4RC
+    ```
+
+2. Create Conda Environment
+    ```bash
+    conda create -n 4rc python=3.11 cmake=3.14.0 -y
+    conda activate 4rc
+    ```
+
+3. Install Python Dependencies
+
+    **Important:** Install [Torch](https://pytorch.org/get-started/locally/) based on your CUDA version. For example, for *Torch 2.8.0 + CUDA 12.6*:
+
+    ```bash
+    # Install Torch
+    pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+
+    # Install other dependencies
+    pip install -r requirements.txt
+
+    # Install 4RC as a package
+    pip install -e .
+    ```
+
+## :computer: Inference
+
+You can now try 4RC with the following code. The checkpoint will be downloaded automatically from [Hugging Face](https://huggingface.co/Luo-Yihang/4RC). 
+
+```python
+import torch
+
+from arc.models.arc.arc import Arc
+from arc.dust3r.inference_multiview import inference
+from arc.dust3r.utils.image import load_images
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+model = Arc.from_pretrained("Luo-Yihang/4RC").to(device)
+model.eval()
+
+example_dir = "examples/robot_arm"
+images = load_images(example_dir, size=512, patch_size=14, verbose=True)
+
+with torch.no_grad():
+    predictions, profiling = inference(
+        images,
+        model,
+        device,
+        dtype="bf16-mixed",
+        profiling=True,
+        verbose=True,
+        use_center_as_anchor=False,
+    )
+``` 
+
+## :zap: Demo
+
+Launch the interactive Gradio demo:
+
+```bash
+python app.py
+```
+
+<div style="width: 100%; text-align: center; margin:auto;">
+    <img style="width:100%" src="assets/gradio_demo.png">
+</div>
+
+## :mag: CLI
+
+For the command-line workflow without the Gradio UI, use the two-step pipeline:
+
+**Step 1: Run inference and save to `.npz`:**
+
+```bash
+python inference.py --input ./examples/robot_arm --save result.npz
+```
+
+***[Optional]*** 
+- *Use `--refine_track_visualization` to enable VLA + SAM2 to auto-segment dynamic objects and filter their trajectories for better visulization.*
+- *Use `--checkpoint_dir Luo-Yihang/4RC_geofinetune` to use the checkpoint finetuned on more geometry datasets for even better geometry prediction.*
+
+<div style="width: 100%; text-align: center; margin:auto;">
+    <img style="width:100%" src="assets/viser_demo.gif">
+</div>
+
+**Step 2: Visualize with viser directly from `.npz`:**
+
+```bash
+python arc/viz/viser_visualizer_track.py --npz_path result.npz --port 8020
+```
+
+Open `http://localhost:8020` in your browser to interact with the 3D visualization.
+
+## 📁 Code Structure
+
+```text
+4RC/
+├── arc/
+│   ├── models/
+│   │   └── arc/
+│   ├── dust3r/
+│   ├── croco/
+│   └── viz/
+├── assets/
+├── examples/
+├── app.py
+├── inference.py
+├── requirements.txt
+├── setup.py
+└── README.md
+```
+
+## :calendar: TODO
+
+🐎 Pushing the bandwidth limit!
+
+- [ ] Release evaluation code.
+- [ ] Release training code.
 
 
 ## 📝 Citation
@@ -76,6 +200,16 @@
       year      = {2026}
   }
    ```
+
+## :pencil: Acknowledgments
+We recognize several concurrent works on the 4D reconstruction. We encourage you to check them out:
+  
+[St4RTrack](https://github.com/HavenFeng/St4RTrack) &nbsp;|&nbsp; [TraceAnything](https://github.com/ByteDance-Seed/TraceAnything) &nbsp;|&nbsp; [V-DPM](https://github.com/eldar/vdpm) &nbsp;|&nbsp; [Any4D](https://github.com/Any-4D/Any4D) &nbsp;|&nbsp; [D4RT](https://d4rt-paper.github.io/)
+
+4RC is built on the shoulders of several outstanding open-source projects. Many thanks to the following exceptional projects:
+
+[VGGT](https://github.com/facebookresearch/vggt) &nbsp;|&nbsp; [Fast3R](https://github.com/facebookresearch/fast3r) &nbsp;|&nbsp; [DUSt3R](https://github.com/naver/dust3r) &nbsp;|&nbsp; [Viser](https://github.com/nerfstudio-project/viser)
+
 
 ## 📫 Contact
 

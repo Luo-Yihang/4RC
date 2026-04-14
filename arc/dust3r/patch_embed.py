@@ -1,0 +1,126 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Copyright (C) 2024-present Naver Corporation. All rights reserved.
+# Licensed under CC BY-NC-SA 4.0 (non-commercial use only).
+#
+# --------------------------------------------------------
+# PatchEmbed implementation for DUST3R,
+# in particular ManyAR_PatchEmbed that Handle images with non-square aspect ratio
+# --------------------------------------------------------
+import torch
+from arc.croco.models.blocks import PatchEmbed
+
+
+def get_patch_embed(patch_embed_cls, img_size, patch_size, enc_embed_dim):
+    assert patch_embed_cls in ["PatchEmbedDust3R", "ManyAR_PatchEmbed"]
+    patch_embed = eval(patch_embed_cls)(img_size, patch_size, 3, enc_embed_dim)
+    return patch_embed
+
+
+class PatchEmbedDust3R(PatchEmbed):
+    def forward(self, x, **kw):
+        B, C, H, W = x.shape
+        assert (
+            H % self.patch_size[0] == 0
+        ), f"Input image height ({H}) is not a multiple of patch size ({self.patch_size[0]})."
+        assert (
+            W % self.patch_size[1] == 0
+        ), f"Input image width ({W}) is not a multiple of patch size ({self.patch_size[1]})."
+        x = self.proj(x)
+        pos = self.position_getter(B, x.size(2), x.size(3), x.device)
+        if self.flatten:
+            x = x.flatten(2).transpose(1, 2)  # BCHW -> BNC
+        x = self.norm(x)
+        return x, pos
+
+
+class ManyAR_PatchEmbed(PatchEmbed):
+    """Handle images with non-square aspect ratio.
+    All images in the same batch have the same aspect ratio.
+    true_shape = [(height, width) ...] indicates the actual shape of each image.
+    """
+
+    def __init__(
+        self,
+        img_size=224,
+        patch_size=16,
+        in_chans=3,
+        embed_dim=768,
+        norm_layer=None,
+        flatten=True,
+    ):
+        self.embed_dim = embed_dim
+        super().__init__(img_size, patch_size, in_chans, embed_dim, norm_layer, flatten)
+
+    def forward(self, img, true_shape):
+        # [Yihang]: Hardcode when inference, this module should work as PatchEmbedDust3R
+        if not self.training:
+            x = img
+            B, C, H, W = x.shape
+            assert (
+                H % self.patch_size[0] == 0
+            ), f"Input image height ({H}) is not a multiple of patch size ({self.patch_size[0]})."
+            assert (
+                W % self.patch_size[1] == 0
+            ), f"Input image width ({W}) is not a multiple of patch size ({self.patch_size[1]})."
+            x = self.proj(x)
+            pos = self.position_getter(B, x.size(2), x.size(3), x.device)
+            if self.flatten:
+                x = x.flatten(2).transpose(1, 2)  # BCHW -> BNC
+            x = self.norm(x)
+            return x, pos 
+
+        B, C, H, W = img.shape
+        # [Yihang]: Hardcode when inference, this module should work as PatchEmbedDust3R
+        assert W >= H, f"img should be in landscape mode, but got {W=} {H=}"
+        assert (
+            H % self.patch_size[0] == 0
+        ), f"Input image height ({H}) is not a multiple of patch size ({self.patch_size[0]})."
+        assert (
+            W % self.patch_size[1] == 0
+        ), f"Input image width ({W}) is not a multiple of patch size ({self.patch_size[1]})."
+        assert true_shape.shape == (
+            B,
+            2,
+        ), f"true_shape has the wrong shape={true_shape.shape}"
+
+        # size expressed in tokens
+        W //= self.patch_size[0]
+        H //= self.patch_size[1]
+        n_tokens = H * W
+
+        height, width = true_shape.T
+        is_landscape = width >= height
+        is_portrait = ~is_landscape
+
+        # linear projection, transposed if necessary
+        if is_landscape.any():
+            new_landscape_content = self.proj(img[is_landscape])
+            new_landscape_content = new_landscape_content.permute(0, 2, 3, 1).flatten(1, 2)
+        if is_portrait.any():
+            new_protrait_content = self.proj(img[is_portrait].swapaxes(-1, -2))
+            new_protrait_content = new_protrait_content.permute(0, 2, 3, 1).flatten(1, 2)
+
+        # allocate space for result and set the content
+        x = img.new_empty((B, n_tokens, self.embed_dim), dtype=next(self.named_parameters())[1].dtype)  # dynamically set dtype based on the current precision
+        # print(x.dtype) # torch.float32
+        # print(new_landscape_content.dtype) # torch.float16
+        # Yihang: we add .to(x.dtype) here so that the demo_track.py will not raise a precision mismatch error
+        if is_landscape.any():
+            x[is_landscape] = new_landscape_content.to(x.dtype)
+        if is_portrait.any():
+            x[is_portrait] = new_protrait_content.to(x.dtype)
+
+        # allocate space for result and set the content
+        pos = img.new_empty((B, n_tokens, 2), dtype=torch.int64)
+        if is_landscape.any():
+            pos[is_landscape] = self.position_getter(1, H, W, pos.device).expand(is_landscape.sum(), -1, -1)
+        if is_portrait.any():
+            pos[is_portrait] = self.position_getter(1, W, H, pos.device).expand(is_portrait.sum(), -1, -1)
+
+        x = self.norm(x)
+        return x, pos
