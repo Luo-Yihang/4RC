@@ -208,7 +208,7 @@ We recognize several concurrent works on the 4D reconstruction. We encourage you
 
 4RC is built on the shoulders of several outstanding open-source projects. Many thanks to the following exceptional projects:
 
-[VGGT](https://github.com/facebookresearch/vggt) &nbsp;|&nbsp; [Fast3R](https://github.com/facebookresearch/fast3r) &nbsp;|&nbsp; [DUSt3R](https://github.com/naver/dust3r) &nbsp;|&nbsp; [Viser](https://github.com/nerfstudio-project/viser)
+[DA3](https://github.com/ByteDance-Seed/depth-anything-3) &nbsp;|&nbsp; [VGGT](https://github.com/facebookresearch/vggt) &nbsp;|&nbsp; [Fast3R](https://github.com/facebookresearch/fast3r) &nbsp;|&nbsp; [DUSt3R](https://github.com/naver/dust3r) &nbsp;|&nbsp; [Viser](https://github.com/nerfstudio-project/viser)
 
 
 ## 📫 Contact
