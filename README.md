@@ -197,7 +197,7 @@ Open `http://localhost:8020` in your browser to interact with the 3D visualizati
   @inproceedings{luo20264rc,
       title     = {4RC: 4D Reconstruction via Conditional Querying Anytime and Anywhere},
       author    = {Yihang Luo and Shangchen Zhou and Yushi Lan and Xingang Pan and Chen Change Loy},
-      journal   = {ICML},
+      booktitle   = {ICML},
       year      = {2026}
   }
    ```
