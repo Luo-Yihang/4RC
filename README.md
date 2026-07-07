@@ -173,6 +173,7 @@ Open `http://localhost:8020` in your browser to interact with the 3D visualizati
 │   ├── croco/
 │   └── viz/
 ├── assets/
+├── eval/
 ├── examples/
 ├── app.py
 ├── inference.py
@@ -181,11 +182,74 @@ Open `http://localhost:8020` in your browser to interact with the 3D visualizati
 └── README.md
 ```
 
+## 📈 Evaluation
+
+1. Prepare Evaluation Dataset
+
+    For dense tracking, please download the evaluation data from [Hugging Face](https://huggingface.co/datasets/Luo-Yihang/dense_track_eval). For point tracking, please download the dataset used by WorldTrack from [Google Drive](https://drive.google.com/drive/folders/1-JW88ru30irMYyFab_4YBQbGbd9tKpXV?usp=sharing). For camera pose estimation, multi-view 3D reconstruction, and video depth evaluation, we follow the dataset preparation guides provided by [MonST3R](https://github.com/Junyi42/monst3r/blob/main/data/evaluation_script.md) and [Spann3R](https://github.com/HengyiWang/spann3r/blob/main/docs/data_preprocess.md). For convenience, we also provide the preprocessed datasets on [Hugging Face](https://huggingface.co/datasets/yslan/pointmap_regression_evalsets), which can be downloaded directly.
+
+    All datasets should be organized as follows under the project's `data` directory:
+
+    ```
+    data/
+    ├── 7scenes
+    ├── bonn
+    ├── kitti
+    ├── neural_rgbd
+    ├── nyu-v2
+    ├── scannetv2
+    ├── sintel
+    ├── tum
+    ├── kubric
+    ├── waymo
+    ├── po_mini
+    ├── ds_mini
+    ├── adt_mini
+    └── pstudio_mini
+    ```
+
+2. Run Evaluation
+
+    Use the provided scripts to evaluate different tasks.
+
+    ### 3D Tracking
+
+    ```bash
+    # Dense tracking
+    bash eval/track/eval_dense_track.sh
+
+    # Sparse point tracking
+    bash eval/track/eval_point_track.sh
+    ```
+
+    Results will be saved in `eval_results/{dense_track,point_track}/${data}/track_eval_${data}`.
+
+    ### Video Depth
+
+    ```bash
+    bash eval/video_depth/run.sh
+    ```
+    Results will be saved in `eval_results/video_depth/4rc/${data}/result_scale.json`.
+
+    ### Camera Pose Estimation
+
+    ```bash
+    bash eval/relpose/run.sh
+    ```
+    Results will be saved in `eval_results/relpose/4rc/${data}/_error_log.txt`.
+
+    ### Multi-view Reconstruction
+
+    ```bash
+    bash eval/mv_recon/run.sh
+    ```
+    Results will be saved in `eval_results/mv_recon/4rc/${data}/logs_all.txt`.
+
 ## :calendar: TODO
 
 🐎 Pushing the bandwidth limit!
 
-- [ ] Release evaluation code.
+- [x] Release evaluation code.
 - [ ] Release training code.
 
 

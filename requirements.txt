@@ -20,6 +20,8 @@ rich            # beautiful text formatting in terminal
 pytest          # tests
 nvitop
 h5py
+natsort
+mediapy
 
 # --------- project core --------- #
 trimesh

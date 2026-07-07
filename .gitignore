@@ -6,7 +6,9 @@ temp_preview_frames/
 develop/
 
 eval_results/
-logs
+logs/
+data/
+data
 
 notebooks/figures/
 notebooks/output/
@@ -169,4 +171,5 @@ configs/local/default.yaml
 .aim
 
 .claude/
+.codex/
 .codex
